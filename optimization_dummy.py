@@ -20,7 +20,7 @@ import os
 
 def main():
     # choose this for not using visuals and thus making experiments faster
-    headless = False
+    headless = True
     if headless:
         os.environ["SDL_VIDEODRIVER"] = "dummy"
 
@@ -39,7 +39,7 @@ def main():
                     enemymode="static",
                     level=2,
                     speed="fastest",
-                    visuals=True)
+                    visuals=False)
 
 
     # number of weights for multilayer with 10 hidden neurons
@@ -54,9 +54,10 @@ def main():
     dom_u = 1
     dom_l = -1
     npop = 100
-    gens = 30
+    gens = 10
     mutation = 0.2
     last_best = 0
+    n_offspring = 50
 
     pop = np.random.uniform(dom_l, dom_u, (npop, n_vars))
     print(pop.shape)
@@ -73,9 +74,21 @@ def main():
     last_sol = fit_pop[best]
     notimproved = 0
 
-    # for i in range(ini_g+1, gens):
-    #     parents = parent_selection(pop, fit_pop, 2)
-    #     offspring = crossover()
+    for i in range(ini_g+1, gens):
+        parents = parent_selection(pop, fit_pop, n_offspring)
+        offspring = crossover(parents)
+        offspring = mutate(offspring, dom_l, dom_u, mutation)
+
+        offspring_fit = evaluate(env, offspring)
+
+        pop = np.vstack((pop, offspring))
+        fit_pop = np.concatenate((fit_pop, offspring_fit))
+
+        pop, fit_pop = survivor_selection(pop, fit_pop, npop)
+
+
+        print (f"Gen {i} - Best: {np.max (fit_pop)} - Mean: {np.mean(fit_pop)}")
+
     
 
 
@@ -94,6 +107,8 @@ def parent_selection(pop, pop_fit, n_parents, smoothing = 1):
 
 def crossover(parents):
     parentsA, parentsB = np.hsplit (parents,2)
+    print(parentsA.shape, parentsB.shape)
+
     roll = np.random.uniform (size = parentsA.shape)
     offspring = parentsA * (roll >= 0.5) + parentsB * (roll < 0.5)
     # squeeze to get rid of the extra dimension created during parent selecting
