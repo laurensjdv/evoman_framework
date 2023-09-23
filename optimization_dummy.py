@@ -125,12 +125,14 @@ def crossover(parents):
     return np.squeeze(offspring, 1)
 
 
-def mutate(pop, min_value, max_value, sigma):
+def mutate(pop, minim, maxim, sigma):
+    # creating of random mutation based on normal distribution of same size as population
     mutation = np.random.normal(0, sigma, size=pop.shape)
-    new_pop = pop + mutation
-    new_pop[new_pop > max_value] = max_value
-    new_pop[new_pop < min_value] = min_value
-    return new_pop
+    # new population is created of both org_pop and newpop combined
+    newpop = np.add(pop, mutation)
+    # newpop values are not supposed to be outside of minim-maxim range:
+    newpop = np.clip(newpop, minim, maxim)
+    return newpop
 
 
 def survivor_selection(population, fitness, total_survivors):
