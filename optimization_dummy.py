@@ -16,40 +16,40 @@ import numpy as np
 import os
 
 
-
-
 def main():
     # choose this for not using visuals and thus making experiments faster
     headless = True
     if headless:
         os.environ["SDL_VIDEODRIVER"] = "dummy"
 
-
-    experiment_name = 'optimization_test'
+    experiment_name = "optimization_test"
     if not os.path.exists(experiment_name):
         os.makedirs(experiment_name)
 
     n_hidden_neurons = 10
 
     # initializes simulation in individual evolution mode, for single static enemy.
-    env = Environment(experiment_name=experiment_name,
-                    enemies=[2],
-                    playermode="ai",
-                    player_controller=player_controller(n_hidden_neurons), # you  can insert your own controller here
-                    enemymode="static",
-                    level=2,
-                    speed="fastest",
-                    visuals=False)
-
+    env = Environment(
+        experiment_name=experiment_name,
+        enemies=[2],
+        playermode="ai",
+        player_controller=player_controller(
+            n_hidden_neurons
+        ),  # you  can insert your own controller here
+        enemymode="static",
+        level=2,
+        speed="fastest",
+        visuals=False,
+    )
 
     # number of weights for multilayer with 10 hidden neurons
-    n_vars = (env.get_num_sensors()+1)*n_hidden_neurons + (n_hidden_neurons+1)*5
+    n_vars = (env.get_num_sensors() + 1) * n_hidden_neurons + (n_hidden_neurons + 1) * 5
 
     # start writing your own code from here
 
-    env.state_to_log() # checks environment state
+    env.state_to_log()  # checks environment state
 
-    run_mode = 'train'
+    run_mode = "train"
 
     dom_u = 1
     dom_l = -1
@@ -60,7 +60,6 @@ def main():
     n_offspring = 50
 
     pop = np.random.uniform(dom_l, dom_u, (npop, n_vars))
-    print(pop.shape)
     fit_pop = evaluate(env, pop)
     best = np.argmax(fit_pop)
     mean = np.mean(fit_pop)
@@ -69,12 +68,21 @@ def main():
     solutions = [pop, fit_pop]
     env.update_solutions(solutions)
 
-    print( '\n GENERATION '+str(ini_g)+' '+str(round(fit_pop[best],6))+' '+str(round(mean,6))+' '+str(round(std,6)))
+    print(
+        "\n GENERATION "
+        + str(ini_g)
+        + " "
+        + str(round(fit_pop[best], 6))
+        + " "
+        + str(round(mean, 6))
+        + " "
+        + str(round(std, 6))
+    )
 
     last_sol = fit_pop[best]
     notimproved = 0
 
-    for i in range(ini_g+1, gens):
+    for i in range(ini_g + 1, gens):
         parents = parent_selection(pop, fit_pop, n_offspring)
         offspring = crossover(parents)
         offspring = mutate(offspring, dom_l, dom_u, mutation)
@@ -86,58 +94,68 @@ def main():
 
         pop, fit_pop = survivor_selection(pop, fit_pop, npop)
 
-
-        print (f"Gen {i} - Best: {np.max (fit_pop)} - Mean: {np.mean(fit_pop)}")
-
-    
+        print(f"Gen {i} - Best: {np.max (fit_pop)} - Mean: {np.mean(fit_pop)}")
 
 
-    
+def parent_selection(population, fitness_values, n_parents):
+    # Parent selection based on rank based selection
 
+    rankings = np.argsort(np.argsort(fitness_values))
 
-def parent_selection(pop, pop_fit, n_parents, smoothing = 1):
-    fitness  = pop_fit + smoothing - np.min(pop_fit)
+    probability = (1 - rankings / len(population)) / np.sum(
+        1 - rankings / len(population)
+    )
 
-    # Fitness proportional selection probability
-    fps = fitness / np.sum (fitness)
-    
-    # make a random selection of indices
-    parent_indices = np.random.choice (np.arange(0,pop.shape[0]), (n_parents,2), p=fps)
-    return pop [parent_indices]
+    parent_indices = np.random.choice(
+        np.arange(0, population.shape[0]), size=(n_parents, 2), p=probability
+    )
+
+    selected_parents = population[parent_indices]
+
+    return selected_parents
+
 
 def crossover(parents):
-    parentsA, parentsB = np.hsplit (parents,2)
-    print(parentsA.shape, parentsB.shape)
+    # crossover based on random indices
+    parentsA, parentsB = np.hsplit(parents, 2)
 
-    roll = np.random.uniform (size = parentsA.shape)
-    offspring = parentsA * (roll >= 0.5) + parentsB * (roll < 0.5)
-    # squeeze to get rid of the extra dimension created during parent selecting
-    return np.squeeze(offspring,1)
+    random = np.random.uniform(size=parentsA.shape)
 
-def mutate(pop,min_value,max_value, sigma):
+    offspring = np.where(random >= 0.5, parentsA, parentsB)
+    return np.squeeze(offspring, 1)
+
+
+def mutate(pop, min_value, max_value, sigma):
     mutation = np.random.normal(0, sigma, size=pop.shape)
     new_pop = pop + mutation
-    new_pop[new_pop>max_value] = max_value
-    new_pop[new_pop<min_value] = min_value
+    new_pop[new_pop > max_value] = max_value
+    new_pop[new_pop < min_value] = min_value
     return new_pop
 
-def survivor_selection(pop, pop_fit, n_pop):
-    best_fit_indices = np.argsort(pop_fit * -1) # -1 since we are maximizing
-    survivor_indices = best_fit_indices [:n_pop]
-    return pop [survivor_indices], pop_fit[survivor_indices]
 
+def survivor_selection(population, fitness, total_survivors):
+    # Input pop here is total population + offspring here
+    # After calculating the fitness of the offspring before,
+    # concatenate the offspring fitness to the initial population fitness --> total fitness
+    # And determine how many survivors we want into the next generation
+
+    sort_fitness = np.argsort(fitness * -1)
+    top_survivors_index = sort_fitness[:total_survivors]
+    survivors = population[top_survivors_index]
+
+    return survivors, fitness[top_survivors_index]
 
 
 # runs simulation
-def simulation(env,x):
-    f,p,e,t = env.play(pcont=x)
+def simulation(env, x):
+    f, p, e, t = env.play(pcont=x)
     return f
+
 
 # evaluation
 def evaluate(env, x):
-        return np.array(list(map(lambda y: simulation(env,y), x)))
+    return np.array(list(map(lambda y: simulation(env, y), x)))
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
