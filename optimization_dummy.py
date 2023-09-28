@@ -16,7 +16,7 @@ import numpy as np
 import os
 
 
-def main():
+def run(enemy=2):
     # choose this for not using visuals and thus making experiments faster
     headless = True
     if headless:
@@ -31,7 +31,7 @@ def main():
     # initializes simulation in individual evolution mode, for single static enemy.
     env = Environment(
         experiment_name=experiment_name,
-        enemies=[2],
+        enemies=[enemy],
         playermode="ai",
         player_controller=player_controller(
             n_hidden_neurons
@@ -54,7 +54,7 @@ def main():
     dom_u = 1
     dom_l = -1
     npop = 100
-    gens = 10
+    gens = 30
     mutation = 0.2
     last_best = 0
     n_offspring = 50
@@ -82,6 +82,12 @@ def main():
     last_sol = fit_pop[best]
     notimproved = 0
 
+    results = {
+        "mean": [np.mean(fit_pop)],
+        "best": [np.max(fit_pop)],
+        "std": [np.std(fit_pop)],
+    }
+
     for i in range(ini_g + 1, gens):
         parents = parent_selection(pop, fit_pop, n_offspring)
         offspring = crossover(parents)
@@ -95,6 +101,12 @@ def main():
         pop, fit_pop = survivor_selection(pop, fit_pop, npop)
 
         print(f"Gen {i} - Best: {np.max (fit_pop)} - Mean: {np.mean(fit_pop)}")
+
+        results["mean"].append(np.mean(fit_pop))
+        results["best"].append(np.max(fit_pop))
+        results["std"].append(np.std(fit_pop))
+
+    return results
 
 
 def parent_selection(population, fitness_values, n_parents):
@@ -160,4 +172,4 @@ def evaluate(env, x):
 
 
 if __name__ == "__main__":
-    main()
+    results = run()
