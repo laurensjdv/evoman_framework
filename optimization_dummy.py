@@ -15,6 +15,10 @@ from demo_controller import player_controller
 import numpy as np
 import os
 
+min_mutation_rate = 0.01  # Minimum mutation rate
+max_mutation_rate = 0.5  # Maximum mutation rate
+diversity_threshold = 26.4  # Threshold below which mutation rate increases
+
 
 def run(enemy=2):
     # choose this for not using visuals and thus making experiments faster
@@ -82,6 +86,10 @@ def run(enemy=2):
     last_sol = fit_pop[best]
     notimproved = 0
 
+    mutation_rate = 0.2  # Initial mutation rate
+
+    print("Initial mutation rate:", mutation_rate)  # Print initial mutation rate
+
     results = {
         "mean": [np.mean(fit_pop)],
         "best": [np.max(fit_pop)],
@@ -91,7 +99,13 @@ def run(enemy=2):
     for i in range(ini_g + 1, gens):
         parents = parent_selection(pop, fit_pop, n_offspring)
         offspring = crossover(parents)
-        offspring = mutate(offspring, dom_l, dom_u, mutation)
+        offspring, mutation_rate = mutate(
+            offspring, dom_l, dom_u, mutation, mutation_rate
+        )
+
+        print(
+            f"Mutation rate at generation {i}: {mutation_rate}"
+        )  # Print mutation rate at each generation
 
         offspring_fit = evaluate(env, offspring)
 
@@ -106,7 +120,7 @@ def run(enemy=2):
         results["best"].append(np.max(fit_pop))
         results["std"].append(np.std(fit_pop))
 
-    return results
+    return results, pop, env
 
 
 def parent_selection(population, fitness_values, n_parents):
@@ -137,14 +151,54 @@ def crossover(parents):
     return np.squeeze(offspring, 1)
 
 
-def mutate(pop, minim, maxim, sigma):
-    # creating of random mutation based on normal distribution of same size as population
-    mutation = np.random.normal(0, sigma, size=pop.shape)
-    # new population is created of both org_pop and newpop combined
+def calculate_diversity(population):
+    num_individuals, num_genes = population.shape
+
+    if num_individuals < 2:
+        return 0.0  # Population is too small to calculate diversity
+
+    # Calculate the pairwise Euclidean distance between all pairs of individuals
+    pairwise_distances = np.zeros((num_individuals, num_individuals))
+
+    for i in range(num_individuals):
+        for j in range(i + 1, num_individuals):
+            diff = population[i] - population[j]
+            distance = np.linalg.norm(diff)
+            pairwise_distances[i][j] = distance
+            pairwise_distances[j][i] = distance
+
+    # Calculate the average distance as a measure of diversity
+    total_distance = np.sum(pairwise_distances)
+    average_distance = total_distance / (num_individuals * (num_individuals - 1) / 2)
+
+    return average_distance
+
+
+def dynamic_mutation_rate(population, mutation_rate):
+    # Calculate a diversity metric (you should implement this based on your problem)
+    diversity = calculate_diversity(population)
+    print(f"diversity {diversity}")
+
+    # If diversity is below the threshold, increase mutation rate
+    if diversity < diversity_threshold:
+        mutation_rate *= 1.1  # Increase mutation rate by 10%
+        print(f"Mutation rate increased to {mutation_rate} at diversity {diversity}")
+    else:
+        mutation_rate = max(min_mutation_rate, min(max_mutation_rate, mutation_rate))
+
+    return mutation_rate
+
+
+def mutate(pop, minim, maxim, sigma, mutation_rate):
+    # Update mutation rate based on diversity
+    mutation_rate = dynamic_mutation_rate(pop, mutation_rate)
+
+    # Apply mutation based on the updated mutation rate
+    mutation = np.random.normal(0, mutation_rate, size=pop.shape)
     newpop = np.add(pop, mutation)
-    # newpop values are not supposed to be outside of minim-maxim range:
     newpop = np.clip(newpop, minim, maxim)
-    return newpop
+
+    return newpop, mutation_rate
 
 
 def survivor_selection(population, fitness, total_survivors):
