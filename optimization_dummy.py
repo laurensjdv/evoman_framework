@@ -224,6 +224,13 @@ def simulation(env, x):
 def evaluate(env, x):
     return np.array(list(map(lambda y: simulation(env, y), x)))
 
+def gain_simulation(env, x):
+    f, p, e, t = env.play(pcont=x)
+    return p-e
+
+def evaluate_gain(env, x):
+    return np.array(list(map(lambda y: gain_simulation(env, y), x)))
+
 
 if __name__ == "__main__":
     results = run()
