@@ -93,7 +93,6 @@ def run(enemy=2):
     results = {
         "mean": [np.mean(fit_pop)],
         "best": [np.max(fit_pop)],
-        "std": [np.std(fit_pop)],
     }
 
     for i in range(ini_g + 1, gens):
@@ -118,7 +117,6 @@ def run(enemy=2):
 
         results["mean"].append(np.mean(fit_pop))
         results["best"].append(np.max(fit_pop))
-        results["std"].append(np.std(fit_pop))
 
     return results, pop, env
 
@@ -224,9 +222,11 @@ def simulation(env, x):
 def evaluate(env, x):
     return np.array(list(map(lambda y: simulation(env, y), x)))
 
+
 def gain_simulation(env, x):
     f, p, e, t = env.play(pcont=x)
-    return p-e
+    return p - e
+
 
 def evaluate_gain(env, x):
     return np.array(list(map(lambda y: gain_simulation(env, y), x)))
