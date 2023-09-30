@@ -102,13 +102,29 @@ def run(enemy=2):
         pop, fit_pop = survivor_selection(pop, fit_pop, npop)
 
         print(f"Gen {i} - Best: {np.max (fit_pop)} - Mean: {np.mean(fit_pop)}")
-        print(f"Gen {i} - Diversity: {calculate_diversity(pop)}")
 
         results["mean"].append(np.mean(fit_pop))
         results["best"].append(np.max(fit_pop))
         results["div"].append(calculate_diversity(pop))
 
     return results, pop, env
+
+
+def calculate_diversity(population):
+    num_individuals, num_genes = population.shape
+
+    if num_individuals < 2:
+        return 0.0  # Population is too small to calculate diversity
+
+    # Calculate the pairwise Euclidean distance between all pairs of individuals
+    pairwise_distances = np.zeros((num_individuals, num_individuals))
+
+    for i in range(num_individuals):
+        for j in range(i + 1, num_individuals):
+            diff = population[i] - population[j]
+            distance = np.linalg.norm(diff)
+            pairwise_distances[i][j] = distance
+            pairwise_distances[j][i] = distance
 
 
 def parent_selection(population, fitness_values, n_parents):
@@ -137,14 +153,6 @@ def crossover(parents):
 
     offspring = np.where(random >= 0.5, parentsA, parentsB)
     return np.squeeze(offspring, 1)
-
-
-def calculate_diversity(population):
-    cosine_sim_matrix = cosine_similarity(population)
-    average_similarity = np.mean(
-        cosine_sim_matrix[np.triu_indices(cosine_sim_matrix.shape[0], k=1)]
-    )
-    return average_similarity
 
 
 def mutate(pop, minim, maxim, sigma):
