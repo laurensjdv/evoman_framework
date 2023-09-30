@@ -126,6 +126,12 @@ def calculate_diversity(population):
             pairwise_distances[i][j] = distance
             pairwise_distances[j][i] = distance
 
+    # Calculate the average distance as a measure of diversity
+    total_distance = np.sum(pairwise_distances)
+    average_distance = total_distance / (num_individuals * (num_individuals - 1) / 2)
+
+    return average_distance
+
 
 def parent_selection(population, fitness_values, n_parents):
     # Parent selection based on rank based selection
