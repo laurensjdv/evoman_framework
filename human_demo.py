@@ -23,6 +23,7 @@ for en in range(1, 9):
                       fullscreen=True,
                       use_joystick=True,
                       playermode='human',
+                      level=2,
                       visuals=True)
     env.update_parameter('enemies', [en])
     env.play()
