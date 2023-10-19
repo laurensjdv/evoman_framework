@@ -22,7 +22,7 @@ max_mutation_rate = 0.5  # Maximum mutation rate
 diversity_threshold = 26.4  # Threshold below which mutation rate increases
 
 
-def run(enemy_l=[1,2,3,4,5,6,7,8]):
+def run(enemy_l=[2, 5, 7, 8, 3, 6, 4, 1], gens=30):
     # choose this for not using visuals and thus making experiments faster
     headless = True
     if headless:
@@ -38,7 +38,7 @@ def run(enemy_l=[1,2,3,4,5,6,7,8]):
     env = Environment(
         experiment_name=experiment_name,
         enemies=[enemy_l[0]],
-        #multiplemode="yes",
+        # multiplemode="yes",
         playermode="ai",
         player_controller=player_controller(
             n_hidden_neurons
@@ -61,7 +61,6 @@ def run(enemy_l=[1,2,3,4,5,6,7,8]):
     dom_u = 1
     dom_l = -1
     npop = 100
-    gens = 30
     mutation = 0.2
     last_best = 0
     n_offspring = 50
@@ -99,11 +98,9 @@ def run(enemy_l=[1,2,3,4,5,6,7,8]):
         "best": [np.max(fit_pop)],
         "div": [calculate_diversity(pop)],
     }
-    # flip enemy_l to run in reverse order using list slicing
+    enemy_l.append(enemy_l[-1])
 
-    print(enemy_l[::-1])    
-
-    for enemy in enemy_l[::-1]:
+    for enemy in enemy_l[1:]:
         for i in range(ini_g + 1, gens):
             parents = parent_selection(pop, fit_pop, n_offspring)
             offspring = crossover(parents)
@@ -128,8 +125,14 @@ def run(enemy_l=[1,2,3,4,5,6,7,8]):
             results["best"].append(np.max(fit_pop))
             results["div"].append(calculate_diversity(pop))
 
-            #print(f"Gen {i} - Diversity: {calculate_diversity(pop)}")
+            # print(f"Gen {i} - Diversity: {calculate_diversity(pop)}")
         env.update_parameter("enemies", [enemy])
+        fit_pop = evaluate(env, pop)
+        best = np.argmax(fit_pop)
+        mean = np.mean(fit_pop)
+        std = np.std(fit_pop)
+        solutions = [pop, fit_pop]
+        env.update_solutions(solutions)
 
     return results, pop, env
 

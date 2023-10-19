@@ -22,7 +22,7 @@ max_mutation_rate = 0.5  # Maximum mutation rate
 diversity_threshold = 26.4  # Threshold below which mutation rate increases
 
 
-def run(enemy_l=[1,2,3,4,5,6,7,8]):
+def run(enemy_l=[1, 2, 3, 4, 5, 6, 7, 8], gens=30):
     # choose this for not using visuals and thus making experiments faster
     headless = True
     if headless:
@@ -61,7 +61,6 @@ def run(enemy_l=[1,2,3,4,5,6,7,8]):
     dom_u = 1
     dom_l = -1
     npop = 100
-    gens = 30
     mutation = 0.2
     last_best = 0
     n_offspring = 50
@@ -238,6 +237,14 @@ def gain_simulation(env, x):
 
 def evaluate_gain(env, x):
     return np.array(list(map(lambda y: gain_simulation(env, y), x)))
+
+
+def evaluate_gain_all_enemies(env, x):
+    res = []
+    for enemy in range(1, 9):
+        env.update_parameter("enemies", [enemy])
+        res.append(list(map(lambda y: gain_simulation(env, y), x)))
+    return np.array(res)
 
 
 if __name__ == "__main__":
