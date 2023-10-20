@@ -133,6 +133,7 @@ def run(enemy_l=[2, 5, 7, 8, 3, 6, 4, 1], gens=30):
         std = np.std(fit_pop)
         solutions = [pop, fit_pop]
         env.update_solutions(solutions)
+        ini_g = 0
 
     return results, pop, env
 

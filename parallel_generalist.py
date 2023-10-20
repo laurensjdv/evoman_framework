@@ -234,9 +234,15 @@ def gain_simulation(env, x):
     f, p, e, t = env.play(pcont=x)
     return p - e
 
+def hp_simulation(env, x):
+    f, p, e, t = env.play(pcont=x)
+    return p, e
 
 def evaluate_gain(env, x):
     return np.array(list(map(lambda y: gain_simulation(env, y), x)))
+
+def evaluate_hp(env, x):
+    return np.array(list(map(lambda y: hp_simulation(env, y)[0], x))), np.array(list(map(lambda y: hp_simulation(env, y)[1], x)))
 
 
 def evaluate_gain_all_enemies(env, x):
